@@ -1,5 +1,6 @@
-
+export const dynamic = 'force-dynamic'
 import { NextResponse } from "next/server";
+
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import fs from 'fs';
@@ -8,7 +9,7 @@ import path from 'path';
 export async function POST(request: Request) {
     try {
         const IMAGES_DIR = path.join(process.cwd(), 'public', 'images');
-        
+
         if (!fs.existsSync(IMAGES_DIR)) {
             return NextResponse.json({ error: `Directory not found: ${IMAGES_DIR}` }, { status: 404 });
         }
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
         for (const file of imageFiles) {
             const name = path.parse(file).name;
             const itemCode = name.replace(/[^a-z0-9]/gi, '-').toUpperCase();
-            
+
             let category = "Scaffolding";
             const nameLower = name.toLowerCase();
             if (nameLower.includes("machine") || nameLower.includes("mixer")) category = "Machinery";
@@ -42,8 +43,8 @@ export async function POST(request: Request) {
             results.push({ name, id: docRef.id });
         }
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             count: results.length,
             items: results
         });

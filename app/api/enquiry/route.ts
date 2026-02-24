@@ -1,27 +1,28 @@
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 
 export async function POST(req: NextRequest) {
-    try {
-        const { name, email, phone, message, equipmentName, itemCode } = await req.json()
+  try {
+    const { name, email, phone, message, equipmentName, itemCode } = await req.json()
 
-        if (!name || !email || !message) {
-            return NextResponse.json({ error: "Name, email, and message are required." }, { status: 400 })
-        }
+    if (!name || !email || !message) {
+      return NextResponse.json({ error: "Name, email, and message are required." }, { status: 400 })
+    }
 
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT) || 587,
-            secure: Number(process.env.SMTP_PORT) === 465,
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        })
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: Number(process.env.SMTP_PORT) === 465,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    })
 
-        const recipients = process.env.ENQUIRY_TO || process.env.SMTP_USER || ""
+    const recipients = process.env.ENQUIRY_TO || process.env.SMTP_USER || ""
 
-        const html = `
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -80,17 +81,17 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`
 
-        await transporter.sendMail({
-            from: `"PMJ Website" <${process.env.SMTP_USER}>`,
-            to: recipients,
-            replyTo: email,
-            subject: `Enquiry: ${equipmentName || "Equipment"} — ${name}`,
-            html,
-        })
+    await transporter.sendMail({
+      from: `"PMJ Website" <${process.env.SMTP_USER}>`,
+      to: recipients,
+      replyTo: email,
+      subject: `Enquiry: ${equipmentName || "Equipment"} — ${name}`,
+      html,
+    })
 
-        return NextResponse.json({ success: true })
-    } catch (error) {
-        console.error("Enquiry email error:", error)
-        return NextResponse.json({ error: "Failed to send enquiry. Please try again." }, { status: 500 })
-    }
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Enquiry email error:", error)
+    return NextResponse.json({ error: "Failed to send enquiry. Please try again." }, { status: 500 })
+  }
 }
