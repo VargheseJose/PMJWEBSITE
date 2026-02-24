@@ -1,0 +1,72 @@
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  concurrency: 80
+
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyAAFD_w6c0AX2n_tZoFa_KklWGqQ0S7lDE
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: pmjwebsite-52465.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: pmjwebsite-52465
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: pmjwebsite-52465.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "91320401611"
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:91320401611:web:d3ff378eae48a4014be54e
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: G-PR0HRYMYP9
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: SMTP_HOST
+    value: smtp.gmail.com
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_PORT
+    value: "587"
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_USER
+    value: pmjgroup@sariga360.in
+    availability:
+      - RUNTIME
+
+  - variable: ENQUIRY_TO
+    value: pmjgroup@sariga360.in,pmjgroups@gmail.com
+    availability:
+      - RUNTIME
+
+  - variable: SMTP_PASS
+    value: "mwtg ttcy xhae ychg"
+    availability:
+      - RUNTIME
