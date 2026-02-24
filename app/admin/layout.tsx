@@ -1,72 +1,185 @@
-import Link from "next/link"
-import { Package2, Home, Package, Calendar, Settings, FileText } from "lucide-react"
+"use client"
 
-export default function AdminLayout({
-    children,
-}: {
-    children: React.ReactNode
-}) {
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect } from "react"
+import {
+    LayoutDashboard, Package, Calendar, Settings, FileText,
+    Users, Clock, ClipboardList, DollarSign, LogOut, Menu, ChevronRight
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { AuthProvider, useAuth } from "@/lib/auth-context"
+import { Button } from "@/components/ui/button"
+
+const navSections = [
+    {
+        label: "Overview",
+        items: [
+            { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        ]
+    },
+    {
+        label: "Operations",
+        items: [
+            { href: "/admin/inventory", icon: Package, label: "Inventory" },
+            { href: "/admin/rentals", icon: Calendar, label: "Bookings" },
+            { href: "/admin/maintenance", icon: Settings, label: "Maintenance" },
+        ]
+    },
+    {
+        label: "People",
+        items: [
+            { href: "/admin/employees", icon: Users, label: "Employees" },
+            { href: "/admin/attendance", icon: Clock, label: "Attendance" },
+            { href: "/admin/attendance/my", icon: Clock, label: "My Attendance" },
+            { href: "/admin/leaves", icon: ClipboardList, label: "Leave Management" },
+            { href: "/admin/payroll", icon: DollarSign, label: "Payroll" },
+        ]
+    },
+    {
+        label: "Analytics",
+        items: [
+            { href: "/admin/reports", icon: FileText, label: "Reports" },
+        ]
+    }
+]
+
+function AdminSidebar() {
+    const pathname = usePathname()
+    const { profile, signOut } = useAuth()
+    const router = useRouter()
+
+    const handleSignOut = async () => {
+        await signOut()
+        router.push("/admin/login")
+    }
+
     return (
-        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-            <div className="hidden border-r bg-muted/40 md:block">
-                <div className="flex h-full max-h-screen flex-col gap-2">
-                    <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                        <Link href="/" className="flex items-center gap-2 font-semibold">
-                            <Package2 className="h-6 w-6" />
-                            <span className="">PMJ Admin</span>
-                        </Link>
+        <div className="hidden border-r border-white/5 bg-slate-900 md:flex flex-col h-screen sticky top-0">
+            {/* Logo */}
+            <div className="flex h-16 items-center border-b border-white/5 px-4 lg:px-6">
+                <Link href="/" className="flex items-center gap-2">
+                    <img src="/images/pmj_logo.jpg" alt="PMJ Group" className="h-8 w-auto object-contain rounded" />
+                    <div>
+                        <p className="text-sm font-bold text-white leading-none">PMJ Admin</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Management Portal</p>
                     </div>
-                    <div className="flex-1">
-                        <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-                            <Link
-                                href="/admin/dashboard"
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                            >
-                                <Home className="h-4 w-4" />
-                                Dashboard
-                            </Link>
-                            <Link
-                                href="/admin/inventory"
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                            >
-                                <Package className="h-4 w-4" />
-                                Inventory
-                            </Link>
-                            <Link
-                                href="/admin/rentals"
-                                className="flex items-center gap-3 rounded-lg box-border px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                            >
-                                <Calendar className="h-4 w-4" />
-                                Bookings
-                            </Link>
-                            <Link
-                                href="/admin/maintenance"
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                            >
-                                <Settings className="h-4 w-4" />
-                                Maintenance
-                            </Link>
-                            <Link
-                                href="/admin/reports"
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                            >
-                                <FileText className="h-4 w-4" />
-                                Reports
-                            </Link>
-                        </nav>
+                </Link>
+            </div>
+
+            {/* Nav */}
+            <div className="flex-1 overflow-y-auto py-4 px-3">
+                {navSections.map((section) => (
+                    <div key={section.label} className="mb-6">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 px-3 mb-2">
+                            {section.label}
+                        </p>
+                        {section.items.map((item) => {
+                            const active = pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all mb-0.5",
+                                        active
+                                            ? "bg-primary/20 text-primary"
+                                            : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                    )}
+                                >
+                                    <item.icon className="h-4 w-4 shrink-0" />
+                                    <span className="flex-1">{item.label}</span>
+                                    {active && <ChevronRight className="h-3 w-3" />}
+                                </Link>
+                            )
+                        })}
                     </div>
+                ))}
+            </div>
+
+            {/* User info + Logout */}
+            {profile && (
+                <div className="border-t border-white/5 p-3">
+                    <div className="flex items-center gap-3 rounded-lg p-3 bg-white/5 mb-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                            {profile.name?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{profile.name}</p>
+                            <p className="text-xs text-slate-400 capitalize">{profile.role}</p>
+                        </div>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleSignOut}
+                        className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                    >
+                        <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                    </Button>
+                </div>
+            )}
+        </div>
+    )
+}
+
+function AdminAuthGuard({ children }: { children: React.ReactNode }) {
+    const { user, loading } = useAuth()
+    const router = useRouter()
+    const pathname = usePathname()
+
+    useEffect(() => {
+        if (!loading && !user && pathname !== "/admin/login") {
+            router.replace("/admin/login")
+        }
+    }, [user, loading, pathname, router])
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-900">
+                <div className="flex flex-col items-center gap-4">
+                    <img src="/images/pmj_logo.jpg" alt="PMJ" className="h-12 w-auto rounded animate-pulse" />
+                    <div className="h-1 w-48 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: "60%" }} />
+                    </div>
+                    <p className="text-slate-500 text-sm">Loading Portal…</p>
                 </div>
             </div>
-            <div className="flex flex-col">
-                <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-                    <div className="w-full flex-1">
-                        <h1 className="text-lg font-semibold">Rental Management System</h1>
+        )
+    }
+
+    if (!user && pathname !== "/admin/login") return null
+    return <>{children}</>
+}
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname()
+    const isLoginPage = pathname === "/admin/login"
+
+    return (
+        <AuthProvider>
+            <AdminAuthGuard>
+                {isLoginPage ? (
+                    <>{children}</>
+                ) : (
+                    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+                        <AdminSidebar />
+                        <div className="flex flex-col flex-1 min-w-0">
+                            {/* Top bar — mobile */}
+                            <header className="flex h-16 items-center gap-4 border-b border-white/5 bg-slate-900 px-4 lg:px-6 md:hidden">
+                                <button className="text-slate-400 hover:text-white">
+                                    <Menu className="h-5 w-5" />
+                                </button>
+                                <img src="/images/pmj_logo.jpg" alt="PMJ" className="h-7 w-auto rounded" />
+                                <span className="font-semibold text-white">PMJ Admin</span>
+                            </header>
+                            <main className="flex-1 p-4 lg:p-6 overflow-auto">
+                                {children}
+                            </main>
+                        </div>
                     </div>
-                </header>
-                <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-                    {children}
-                </main>
-            </div>
-        </div>
+                )}
+            </AdminAuthGuard>
+        </AuthProvider>
     )
 }

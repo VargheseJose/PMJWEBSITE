@@ -1,13 +1,45 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Phone, MapPin, Clock, Send, Calendar } from "lucide-react"
+import { Mail, Phone, MapPin, Clock, Send, Calendar, CheckCircle, Loader2 } from "lucide-react"
 
 export default function ContactPage() {
+    const [form, setForm] = useState({
+        firstName: "", lastName: "", email: "", phone: "", subject: "", message: "",
+    })
+    const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
+    const [error, setError] = useState("")
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        setError("")
+        try {
+            const res = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Something went wrong")
+            setSuccess(true)
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to send message.")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="container py-12 md:py-24 px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-12 items-start max-w-6xl mx-auto">
@@ -100,50 +132,107 @@ export default function ContactPage() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <form className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="first-name" className="text-white">First name</Label>
-                                    <Input id="first-name" placeholder="John" required className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10" />
+                        {success ? (
+                            <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                                <CheckCircle className="h-14 w-14 text-green-400" />
+                                <h3 className="text-xl font-bold text-white">Message Sent!</h3>
+                                <p className="text-blue-100/70 max-w-xs">
+                                    Thank you, <strong className="text-white">{form.firstName}</strong>. We'll get back to you within 24 hours.
+                                </p>
+                                <Button
+                                    variant="outline"
+                                    className="mt-2 border-white/20 text-white hover:bg-white/10"
+                                    onClick={() => { setSuccess(false); setForm({ firstName: "", lastName: "", email: "", phone: "", subject: "", message: "" }) }}
+                                >
+                                    Send Another
+                                </Button>
+                            </div>
+                        ) : (
+                            <form className="space-y-4" onSubmit={handleSubmit}>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="firstName" className="text-white">First name</Label>
+                                        <Input
+                                            id="firstName" name="firstName"
+                                            placeholder="John" required
+                                            value={form.firstName} onChange={handleChange}
+                                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lastName" className="text-white">Last name</Label>
+                                        <Input
+                                            id="lastName" name="lastName"
+                                            placeholder="Doe"
+                                            value={form.lastName} onChange={handleChange}
+                                            className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10"
+                                        />
+                                    </div>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label htmlFor="last-name" className="text-white">Last name</Label>
-                                    <Input id="last-name" placeholder="Doe" required className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10" />
+                                    <Label htmlFor="email" className="text-white">Email</Label>
+                                    <Input
+                                        id="email" name="email"
+                                        placeholder="john@example.com" type="email" required
+                                        value={form.email} onChange={handleChange}
+                                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10"
+                                    />
                                 </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="email" className="text-white">Email</Label>
-                                <Input id="email" placeholder="john@example.com" type="email" required className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10" />
-                            </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone" className="text-white">Phone Number</Label>
+                                    <Input
+                                        id="phone" name="phone"
+                                        placeholder="+91 98765 43210" type="tel"
+                                        value={form.phone} onChange={handleChange}
+                                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10"
+                                    />
+                                </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="phone" className="text-white">Phone Number</Label>
-                                <Input id="phone" placeholder="+91 98765 43210" type="tel" className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10" />
-                            </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="subject" className="text-white">Subject</Label>
+                                    <Input
+                                        id="subject" name="subject"
+                                        placeholder="Equipment Inquiry"
+                                        value={form.subject} onChange={handleChange}
+                                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10"
+                                    />
+                                </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="subject" className="text-white">Subject</Label>
-                                <Input id="subject" placeholder="Equipment Inquiry" className="bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10" />
-                            </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="message" className="text-white">Message</Label>
+                                    <Textarea
+                                        id="message" name="message"
+                                        placeholder="Tell us about your project and equipment needs..."
+                                        className="min-h-[150px] bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10 resize-none"
+                                        required
+                                        value={form.message} onChange={handleChange}
+                                    />
+                                </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="message" className="text-white">Message</Label>
-                                <Textarea
-                                    id="message"
-                                    placeholder="Tell us about your project and equipment needs..."
-                                    className="min-h-[150px] bg-white/5 border-white/10 text-white placeholder:text-gray-400 focus:bg-white/10 resize-none"
-                                    required
-                                />
-                            </div>
+                                {error && (
+                                    <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                                        {error}
+                                    </p>
+                                )}
 
-                            <Button type="submit" className="w-full text-base py-6 font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all bg-primary hover:bg-primary/90 text-white">
-                                <Send className="mr-2 h-4 w-4" /> Send Message
-                            </Button>
-                        </form>
+                                <Button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full text-base py-6 font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all bg-primary hover:bg-primary/90 text-white"
+                                >
+                                    {loading
+                                        ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
+                                        : <><Send className="mr-2 h-4 w-4" /> Send Message</>
+                                    }
+                                </Button>
+                            </form>
+                        )}
                     </CardContent>
                 </Card>
             </div>
+
             {/* Background Orbs */}
             <div className="fixed top-20 right-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -z-10 pointer-events-none" />
             <div className="fixed bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] -z-10 pointer-events-none" />

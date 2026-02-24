@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Construction, Menu, X, Calendar } from "lucide-react"
+import { Menu, X, Calendar } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -16,8 +16,8 @@ export default function PublicLayout({
     const [isMenuOpen, setIsMenuOpen] = useState(false)
 
     const navItems = [
+        { name: "Home", href: "/" },
         { name: "Equipment Catalog", href: "/catalog" },
-        { name: "Services", href: "/#services" }, // Anchor link example
         { name: "About", href: "/about" },
         { name: "Contact", href: "/contact" },
     ]
@@ -28,10 +28,11 @@ export default function PublicLayout({
                 <div className="container flex h-16 items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Link href="/" className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 backdrop-blur-sm border border-primary/20 text-primary">
-                                <Construction className="h-5 w-5" />
-                            </div>
-                            <span className="font-bold text-lg tracking-tight text-white drop-shadow-sm">PMJ Group</span>
+                            <img
+                                src="/images/pmj_logo.jpg"
+                                alt="PMJ Group"
+                                className="h-10 w-auto object-contain rounded"
+                            />
                         </Link>
                     </div>
 
@@ -110,10 +111,11 @@ export default function PublicLayout({
                 <div className="container grid grid-cols-1 md:grid-cols-4 gap-8 px-4 md:px-6">
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground">
-                                <Construction className="h-4 w-4" />
-                            </div>
-                            <span className="font-bold">PMJ Group</span>
+                            <img
+                                src="/images/pmj_logo.jpg"
+                                alt="PMJ Group"
+                                className="h-8 w-auto object-contain rounded"
+                            />
                         </div>
                         <p className="text-sm text-muted-foreground leading-relaxed">
                             Leading provider of construction equipment rentals. Quality machinery and scaffolding for every project size.

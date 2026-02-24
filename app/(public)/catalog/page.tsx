@@ -3,8 +3,8 @@
 import { useEffect, useState, Suspense } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { collection, getDocs, query, where } from "firebase/firestore"
-import { Search, Filter, ShoppingCart } from "lucide-react"
+import { collection, getDocs } from "firebase/firestore"
+import { Search, Filter, ShoppingCart, X, Loader2, CheckCircle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,13 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog"
 import { db } from "@/lib/firebase"
 
 interface Equipment {
@@ -30,6 +37,176 @@ interface Equipment {
     status?: string
 }
 
+interface EnquiryForm {
+    name: string
+    email: string
+    phone: string
+    message: string
+}
+
+function EnquiryModal({
+    open,
+    onClose,
+    equipment,
+}: {
+    open: boolean
+    onClose: () => void
+    equipment: Equipment | null
+}) {
+    const [form, setForm] = useState<EnquiryForm>({ name: "", email: "", phone: "", message: "" })
+    const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
+    const [error, setError] = useState("")
+
+    // Reset state when modal opens
+    useEffect(() => {
+        if (open) {
+            setForm({ name: "", email: "", phone: "", message: "" })
+            setSuccess(false)
+            setError("")
+            setLoading(false)
+        }
+    }, [open])
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setLoading(true)
+        setError("")
+
+        try {
+            const res = await fetch("/api/enquiry", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...form,
+                    equipmentName: equipment?.name,
+                    itemCode: equipment?.itemCode,
+                }),
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Something went wrong")
+            setSuccess(true)
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to send enquiry.")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+            <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b bg-muted/20">
+                    <DialogTitle className="text-lg font-bold">Enquire About Equipment</DialogTitle>
+                    {equipment && (
+                        <DialogDescription className="flex flex-col gap-0.5 mt-1">
+                            <span className="text-foreground font-semibold">{equipment.name}</span>
+                            <span className="font-mono text-xs">{equipment.itemCode}</span>
+                        </DialogDescription>
+                    )}
+                </DialogHeader>
+
+                <div className="px-6 py-5">
+                    {success ? (
+                        <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                            <CheckCircle className="h-12 w-12 text-green-500" />
+                            <h3 className="text-lg font-semibold">Enquiry Sent!</h3>
+                            <p className="text-sm text-muted-foreground">
+                                Thank you, <strong>{form.name}</strong>. We'll get back to you shortly.
+                            </p>
+                            <Button variant="outline" className="mt-2" onClick={onClose}>Close</Button>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium" htmlFor="enq-name">
+                                        Name <span className="text-destructive">*</span>
+                                    </label>
+                                    <Input
+                                        id="enq-name"
+                                        name="name"
+                                        placeholder="Your full name"
+                                        value={form.name}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium" htmlFor="enq-phone">
+                                        Phone
+                                    </label>
+                                    <Input
+                                        id="enq-phone"
+                                        name="phone"
+                                        type="tel"
+                                        placeholder="+91 00000 00000"
+                                        value={form.phone}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" htmlFor="enq-email">
+                                    Email <span className="text-destructive">*</span>
+                                </label>
+                                <Input
+                                    id="enq-email"
+                                    name="email"
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    value={form.email}
+                                    onChange={handleChange}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium" htmlFor="enq-message">
+                                    Message <span className="text-destructive">*</span>
+                                </label>
+                                <textarea
+                                    id="enq-message"
+                                    name="message"
+                                    rows={4}
+                                    placeholder="Tell us about your requirements, rental duration, project site, etc."
+                                    value={form.message}
+                                    onChange={handleChange}
+                                    required
+                                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                                />
+                            </div>
+
+                            {error && (
+                                <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+                                    {error}
+                                </p>
+                            )}
+
+                            <div className="flex gap-3 pt-1">
+                                <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={loading}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" className="flex-1 font-semibold" disabled={loading}>
+                                    {loading ? (
+                                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</>
+                                    ) : "Send Enquiry"}
+                                </Button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 function CatalogContent() {
     const searchParams = useSearchParams()
     const initialCategory = searchParams.get("category") || "All"
@@ -38,6 +215,7 @@ function CatalogContent() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [categoryFilter, setCategoryFilter] = useState(initialCategory)
+    const [enquiryItem, setEnquiryItem] = useState<Equipment | null>(null)
 
     useEffect(() => {
         const fetchEquipment = async () => {
@@ -72,11 +250,16 @@ function CatalogContent() {
         return matchesSearch && matchesCategory
     })
 
-    // Get unique categories and sort
     const categories = ["All", ...Array.from(new Set(equipment.map((item) => item.category))).filter(Boolean)].sort()
 
     return (
         <div className="container py-10 px-4 md:px-6">
+            <EnquiryModal
+                open={!!enquiryItem}
+                onClose={() => setEnquiryItem(null)}
+                equipment={enquiryItem}
+            />
+
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Equipment Catalog</h1>
@@ -169,7 +352,6 @@ function CatalogContent() {
                             {filteredEquipment.map((item) => (
                                 <Card key={item.id} className="group overflow-hidden flex flex-col transition-all hover:shadow-lg hover:border-primary/50">
                                     <div className="relative aspect-[4/3] w-full bg-muted/30 flex items-center justify-center overflow-hidden">
-                                        {/* Placeholder for actual image */}
                                         {item.images && item.images.length > 0 ? (
                                             <img
                                                 src={item.images[0]}
@@ -205,11 +387,13 @@ function CatalogContent() {
                                             <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Rate</span>
                                             <span className="text-lg font-bold text-primary">₹{item.dailyRate}<span className="text-xs font-normal text-muted-foreground">/day</span></span>
                                         </div>
-                                        <Link href="/contact">
-                                            <Button size="sm" className="font-semibold shadow-sm">
-                                                Enquire
-                                            </Button>
-                                        </Link>
+                                        <Button
+                                            size="sm"
+                                            className="font-semibold shadow-sm"
+                                            onClick={() => setEnquiryItem(item)}
+                                        >
+                                            Enquire
+                                        </Button>
                                     </CardFooter>
                                 </Card>
                             ))}

@@ -1,8 +1,49 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, CheckCircle2, Truck, Clock, ShieldCheck } from "lucide-react"
+import { ArrowRight, ShieldCheck, Clock, Truck, LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+
+interface CategoryInfo {
+    name: string
+    count: number
+    image?: string
+}
 
 export default function Home() {
+    const [categories, setCategories] = useState<CategoryInfo[]>([])
+    const [loadingCats, setLoadingCats] = useState(true)
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const snap = await getDocs(collection(db, "equipment"))
+                const countMap: Record<string, { count: number; image?: string }> = {}
+                snap.forEach((doc) => {
+                    const data = doc.data()
+                    const cat = (data.category as string) || "Uncategorized"
+                    if (!countMap[cat]) countMap[cat] = { count: 0, image: undefined }
+                    countMap[cat].count += 1
+                    if (!countMap[cat].image && data.images?.length > 0) {
+                        countMap[cat].image = data.images[0]
+                    }
+                })
+                const sorted = Object.entries(countMap)
+                    .map(([name, { count, image }]) => ({ name, count, image }))
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                setCategories(sorted)
+            } catch (err) {
+                console.error("Error fetching categories:", err)
+            } finally {
+                setLoadingCats(false)
+            }
+        }
+        fetchCategories()
+    }, [])
+
     return (
         <div className="flex flex-col min-h-screen">
             {/* Hero Section */}
@@ -99,7 +140,7 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Categories Preview */}
+            {/* Categories Preview — dynamic from Firestore */}
             <section className="py-20 glass-strong">
                 <div className="container px-4 md:px-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-12">
@@ -114,29 +155,47 @@ export default function Home() {
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <Link href="/catalog?category=Scaffolding" className="group relative overflow-hidden rounded-xl aspect-[4/3] glass border border-white/10 hover:border-blue-400/50 transition-colors shadow-lg">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-0" />
-                            <div className="relative z-10 h-full flex flex-col justify-end p-6">
-                                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">Scaffolding</h3>
-                                <p className="text-sm text-blue-100/60">H-Frames, Pipes, Cuplocks</p>
-                            </div>
-                        </Link>
-                        <Link href="/catalog?category=Machinery" className="group relative overflow-hidden rounded-xl aspect-[4/3] glass border border-white/10 hover:border-blue-400/50 transition-colors shadow-lg">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-0" />
-                            <div className="relative z-10 h-full flex flex-col justify-end p-6">
-                                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">Machinery</h3>
-                                <p className="text-sm text-blue-100/60">Mixers, Hoists, Vibrators</p>
-                            </div>
-                        </Link>
-                        <Link href="/catalog?category=Formwork" className="group relative overflow-hidden rounded-xl aspect-[4/3] glass border border-white/10 hover:border-blue-400/50 transition-colors shadow-lg">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-0" />
-                            <div className="relative z-10 h-full flex flex-col justify-end p-6">
-                                <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-blue-300 transition-colors">Formwork</h3>
-                                <p className="text-sm text-blue-100/60">Shutters, Floor Forms, Props</p>
-                            </div>
-                        </Link>
-                    </div>
+                    {loadingCats ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="animate-pulse rounded-xl aspect-[4/3] bg-white/5 border border-white/10" />
+                            ))}
+                        </div>
+                    ) : categories.length === 0 ? (
+                        <div className="text-center py-16 text-blue-100/50">No categories found in catalog.</div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {categories.map((cat) => (
+                                <Link
+                                    key={cat.name}
+                                    href={`/catalog?category=${encodeURIComponent(cat.name)}`}
+                                    className="group relative overflow-hidden rounded-xl aspect-[4/3] glass border border-white/10 hover:border-blue-400/50 transition-all shadow-lg"
+                                >
+                                    {/* Background image */}
+                                    {cat.image ? (
+                                        <img
+                                            src={cat.image}
+                                            alt={cat.name}
+                                            className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                    ) : null}
+                                    {/* Dark overlay always present, stronger on hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20 group-hover:from-black/90 group-hover:via-black/50 transition-all z-10" />
+                                    {/* Hover colour tint */}
+                                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/15 transition-colors z-10" />
+                                    <div className="relative z-20 h-full flex flex-col justify-end p-6">
+                                        <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 text-blue-300 group-hover:bg-blue-500 group-hover:text-white transition-colors backdrop-blur-sm">
+                                            <LayoutGrid className="h-5 w-5" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold mb-1 text-white group-hover:text-blue-300 transition-colors drop-shadow">{cat.name}</h3>
+                                        <p className="text-sm text-white/60">
+                                            {cat.count} item{cat.count !== 1 ? "s" : ""} available
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
